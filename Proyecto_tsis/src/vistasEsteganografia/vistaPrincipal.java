@@ -15,6 +15,9 @@ import javax.swing.JOptionPane;
 import java.awt.Font;
 import javax.swing.SwingConstants;
 import javax.swing.JTextField;
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.imageio.ImageIO;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -23,6 +26,8 @@ import java.awt.Color;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.awt.event.ActionEvent;
 
 public class vistaPrincipal extends JFrame {
@@ -40,6 +45,7 @@ public class vistaPrincipal extends JFrame {
 				try {
 					vistaPrincipal frame = new vistaPrincipal();
 					frame.setVisible(true);
+					frame.setLocationRelativeTo(null);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -54,7 +60,7 @@ public class vistaPrincipal extends JFrame {
 		setBackground(new Color(192, 192, 192));
 		setResizable(false);
 		setTitle("Esteganografia");
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(0);
 		setBounds(100, 100, 780, 580);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -99,7 +105,15 @@ public class vistaPrincipal extends JFrame {
 				case JFileChooser.APPROVE_OPTION:
 					// seleccionó abrir
 					path1.setText(explorador.getSelectedFile().getAbsolutePath());
-					btnBuscar_1.setEnabled(true);
+					if(path1.getText().endsWith(".bmp")) {
+						btnBuscar_1.setEnabled(true);
+					}else {
+						JOptionPane.showMessageDialog(null,
+								"Error el archivo que quiere abrir en "+lblImagenOriginal.getText()+" no es correcto \n"
+								+ "La primer direccion solo puede contener archivos con extencion bmp \n");
+						path1.setText("");
+					}
+					
 					break;
 				case JFileChooser.CANCEL_OPTION:
 					// dio click en cancelar o cerro la ventana
@@ -140,7 +154,14 @@ public class vistaPrincipal extends JFrame {
 				case JFileChooser.APPROVE_OPTION:
 					// seleccionó abrir
 					path2.setText(explorador.getSelectedFile().getAbsolutePath());
-					btnOcultar.setEnabled(true);
+					if(path2.getText().endsWith(".bmp") || path2.getText().endsWith(".txt")) {
+						btnOcultar.setEnabled(true);
+					}else {
+						JOptionPane.showMessageDialog(null,
+								"Error el archivo que quiere abrir "+lblImagenOTexto.getText()+" no es correcto \n"
+								+ "La segunda direccion solo puede contener archivo con extencion bmp o txt");
+						path2.setText("");
+					}
 					break;
 				case JFileChooser.CANCEL_OPTION:
 					// dio click en cancelar o cerro la ventana
@@ -160,28 +181,44 @@ public class vistaPrincipal extends JFrame {
 		btnOcultar.setEnabled(false);
 		btnOcultar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if(path1.getText().endsWith(".bmp")) {
-					if (path2.getText().endsWith(".bmp") || path2.getText().endsWith(".txt")) {
-						//Aqui se va a llamar a AES para cifrar la imagen o texto
-						//Una vez cifrado se llamra a otro metodo el cual va ocultar la imgen o texto cifrado
-						Estega estega = new Estega(path1.getText(),path2.getText());
-						
-					} else {
-						JOptionPane.showMessageDialog(null,
-								"Error el archivo que quiere abrir "+lblImagenOTexto.getText()+" no es correcto \n"
-								+ "La segunda direccion solo puede contener archivo con extencion bmp o txt");
-						path2.setText("");
-					}
-				}else{
-					JOptionPane.showMessageDialog(null,
-							"Error el archivo que quiere abrir en "+lblImagenOriginal.getText()+" no es correcto \n"
-							+ "La primer direccion solo puede contener archivos con extencion bmp \n");
-					path1.setText("");
+				//Aqui se va a llamar a AES para cifrar la imagen o texto
+				//Una vez cifrado se llamra a otro metodo el cual va ocultar la imgen o texto cifrado
+				Estega estega = new Estega(path1.getText(),path2.getText());
+				try {
+					estega.CifradoAES();
+				} catch (InvalidKeyException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} catch (NoSuchAlgorithmException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} catch (NoSuchPaddingException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} catch (IllegalBlockSizeException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} catch (BadPaddingException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
 				}
+				path1.setText("");
+				path2.setText("");
+				btnBuscar_1.setEnabled(false);
+				btnOcultar.setEnabled(false);
 			}
 		});
 		btnOcultar.setFont(new Font("Arial", Font.PLAIN, 20));
 		btnOcultar.setBounds(278, 396, 192, 43);
 		contentPane.add(btnOcultar);
+		
+		JButton btnSalir = new JButton("Salir");
+		btnSalir.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				System.exit(0);
+			}
+		});
+		btnSalir.setBounds(329, 470, 89, 23);
+		contentPane.add(btnSalir);
 	}
 }
