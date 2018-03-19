@@ -3,8 +3,10 @@ package Esteganografia;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
@@ -25,7 +27,12 @@ public class Estega {
 	private String instancia = "AES/ECB/PKCS5Padding";
 	byte[] msjE;
 	byte[] msjD;
-	String r = "", g = "", b = "";
+	String Sr = "";
+	String Sg = "";
+	String Sb = "";
+	int [][] r;
+	int [][] g;
+	int [][] b;
 	byte [] rE;
 	byte [] gE;
 	byte [] bE;
@@ -57,22 +64,28 @@ public class Estega {
 		crea_mensaje();
 		genera_clave(metodo, longitud);
 		encripta();
-		System.out.println("mensaje "+msj);
-		System.out.println("mensaje encriptado: ");
-		for (byte b : msjE) {
-	         System.out.print(Integer.toHexString(0xFF & b));
-	      }
+//		System.out.println("mensaje "+msj);
+//		System.out.println("mensaje encriptado: ");
+//		for (byte b : msjE) {
+//	         System.out.print(Integer.toHexString(0xFF & b));
+//	    }
 	    System.out.println();
-	    System.out.println("mensaje desencriptado");
+//	    System.out.println("mensaje desencriptado");
 		desencripta();
 	    System.out.println(new String(msjD));
 	}
 	
-	private void cifraImagen(String metodo, int longitud) {
+	private void cifraImagen(String metodo, int longitud) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException {
 		llena_rgb();
-		System.out.println("r: "+r);
-		System.out.println("g: "+g);
-		System.out.println("b: "+b);
+		genera_clave(metodo,longitud);
+		encripta();
+		desencripta();
+		/* Este for muestra la cadena encriptada
+		for (byte b : rE) {
+	         System.out.print(Integer.toHexString(0xFF & b));
+	    }
+	    
+	   */
 	}
 
 	private void crea_mensaje() {
@@ -120,29 +133,60 @@ public class Estega {
 
 	private void encripta() throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
 								   IllegalBlockSizeException, BadPaddingException {
-		Cipher aes = Cipher.getInstance(instancia);
-		aes.init(Cipher.ENCRYPT_MODE, key);
-		msjE = aes.doFinal(msj.getBytes());
+		if (path2.endsWith(".txt")) {
+			Cipher aes = Cipher.getInstance(instancia);
+			aes.init(Cipher.ENCRYPT_MODE, key);
+			msjE = aes.doFinal(msj.getBytes());
+		} else {
+			Cipher aes = Cipher.getInstance(instancia);
+			aes.init(Cipher.ENCRYPT_MODE, key2);
+			rE = aes.doFinal(Sr.getBytes());
+			gE = aes.doFinal(Sg.getBytes());
+			bE = aes.doFinal(Sb.getBytes());
+		}
 	}
 
 	private void desencripta() throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
 									  IllegalBlockSizeException, BadPaddingException {
-		Cipher aes = Cipher.getInstance(instancia);
-		aes.init(Cipher.DECRYPT_MODE, key);
-		msjD = aes.doFinal(msjE);
+		if (path2.endsWith(".txt")) {
+			Cipher aes = Cipher.getInstance(instancia);
+			aes.init(Cipher.DECRYPT_MODE, key);
+			msjD = aes.doFinal(msjE);
+		} else {
+			Cipher aes = Cipher.getInstance(instancia);
+			aes.init(Cipher.DECRYPT_MODE, key2);
+			rD = aes.doFinal(rE);
+			gD = aes.doFinal(gE);
+			bD = aes.doFinal(bE);
+		}
+		
 	}
 	
 	private void llena_rgb() {
 		try {
 			System.out.println(path2);
-			BufferedImage img = ImageIO.read(new File(path2));
-			for (int i = 0; i < img.getWidth(); i++) {
-				for (int j = 0; j < img.getHeight(); j++) {
+			InputStream input = new FileInputStream(path2);
+			BufferedImage img = ImageIO.read(input);
+			int w = img.getTileWidth();
+			int h = img.getHeight();
+			r = new int[w][h];
+			g = new int[w][h];
+			b = new int[w][h];
+			for (int i = 0; i < w; i++) {
+				for (int j = 0; j < h; j++) {
 					int rgb = img.getRGB(i, j);
-					Color color = new Color(rgb); 
-					r = r + Integer.toString(color.getRed());
-					g = g + color.getGreen();
-					b = b + color.getBlue();
+					Color color = new Color(rgb,true); 
+					r[i][j] = color.getRed();
+					g[i][j] = color.getGreen();
+					b[i][j] = color.getBlue();
+				}
+			}
+			input.close();
+			for (int i = 0; i < w; i++) {
+				for (int j = 0; j < h; j++) {
+					Sr = Sr + r[i][j];
+					Sg = Sg + r[i][j];
+					Sb = Sb + r[i][j];
 				}
 			}
 		} catch (IOException e) {
